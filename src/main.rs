@@ -1,28 +1,40 @@
 use std::env;
 
 use git2::{Repository, Status};
+use std::{error::Error, fs};
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    let repo_path = &args[1];
+    let root_path = &args[1];
 
-    let repo = match Repository::open(repo_path) {
-        Ok(repo) => repo,
-        Err(e) => panic!("failed to open: {}", e),
-    };
+    for entry in fs::read_dir(root_path)? {
+        let entry = entry?;
+        let path = entry.path();
 
-    let ok_statuses = [Status::CURRENT, Status::IGNORED];
+        if path.is_dir() {
+            let path = path.to_str().ok_or("Not a valid path")?;
 
-    if let Ok(statuses) = repo.statuses(None) {
-        for entry in statuses.iter() {
-            let status = entry.status();
-            if !ok_statuses.contains(&status) {
-                if let Some(path) = entry.path() {
-                    println!("{} = {:?}", path, status);
+            match Repository::open(path) {
+                Ok(repo) => {
+                    if is_dirty(repo)? {
+                        println!("{} is dirty", path);
+                    }
                 }
+                Err(err) => println!("{} could not open with error: {}", path, err),
             }
         }
-    } else {
-        println!("Failed to get statuses from repo");
-    };
+    }
+
+    Ok(())
+}
+
+fn is_dirty(repo: Repository) -> Result<bool, Box<dyn Error>> {
+    let ok_statuses = [Status::CURRENT, Status::IGNORED];
+    let statuses = repo.statuses(None)?;
+
+    let result = statuses
+        .iter()
+        .any(|entry| !ok_statuses.contains(&entry.status()));
+
+    Ok(result)
 }
