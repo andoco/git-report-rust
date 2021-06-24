@@ -25,7 +25,11 @@ impl std::fmt::Display for RepoStatus {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    let root_path = &args[1];
+
+    let root_path = match args.get(1) {
+        Some(path) => path,
+        None => ".",
+    };
 
     let mut statuses: Vec<(String, RepoStatus)> = vec![];
 
