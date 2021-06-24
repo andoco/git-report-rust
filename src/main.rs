@@ -1,5 +1,6 @@
 use std::env;
 
+use ansi_term::Colour;
 use git2::{ErrorCode, Repository, Status};
 use std::{error::Error, fs};
 
@@ -36,11 +37,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             let status = Repository::open(path)
                 .map_or_else(map_git_error_to_repo_status, get_repo_report_status);
 
-            println!("{} {}", path, status);
+            print_status(path, status);
         }
     }
 
     Ok(())
+}
+
+fn print_status(path: &str, status: RepoStatus) {
+    let to_print = match status {
+        RepoStatus::Clean => Colour::Green.paint("Clean"),
+        RepoStatus::Changed => Colour::Purple.paint("Changed"),
+        RepoStatus::NotRepo => Colour::Yellow.paint("Not a repo"),
+        RepoStatus::Error(e) => Colour::Red.paint(format!("Error {}", e)),
+    };
+    println!("{} {}", path, to_print);
 }
 
 fn get_repo_report_status(repo: Repository) -> RepoStatus {
