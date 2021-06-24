@@ -27,6 +27,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let root_path = &args[1];
 
+    let mut statuses: Vec<(String, RepoStatus)> = vec![];
+
     for entry in fs::read_dir(root_path)? {
         let entry = entry?;
         let path = entry.path();
@@ -37,21 +39,33 @@ fn main() -> Result<(), Box<dyn Error>> {
             let status = Repository::open(path)
                 .map_or_else(map_git_error_to_repo_status, get_repo_report_status);
 
-            print_status(path, status);
+            statuses.push((path.to_string(), status));
         }
     }
+
+    let max_length = statuses.iter().map(|(p, _)| p.len()).max().unwrap();
+
+    statuses
+        .iter()
+        .for_each(|(p, s)| print_status(p, s, max_length));
 
     Ok(())
 }
 
-fn print_status(path: &str, status: RepoStatus) {
+fn print_status(path: &String, status: &RepoStatus, column_size: usize) {
     let to_print = match status {
         RepoStatus::Clean => Colour::Green.paint("Clean"),
         RepoStatus::Changed => Colour::Purple.paint("Changed"),
         RepoStatus::NotRepo => Colour::Yellow.paint("Not a repo"),
         RepoStatus::Error(e) => Colour::Red.paint(format!("Error {}", e)),
     };
-    println!("{} {}", path, to_print);
+    println!(
+        "{}{: <width$}{}",
+        path,
+        " ",
+        to_print,
+        width = column_size - path.len() + 1,
+    );
 }
 
 fn get_repo_report_status(repo: Repository) -> RepoStatus {
