@@ -1,5 +1,5 @@
 [package]
-name = "rust-git-report"
+name = "git-report"
 version = "0.1.0"
 authors = ["Andrew O'Connor <andrew.oconnor@gmail.com>"]
 edition = "2018"
