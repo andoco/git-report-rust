@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use colored::Colorize;
 
 use crate::{RepoReport, RepoStatus};
@@ -28,9 +30,9 @@ impl Printer for SimplePrinter {
 
         match &report.repo_status {
             RepoStatus::Clean | RepoStatus::Dirty => {
-                format!("{} {} | {}", path, repo_status, branch_statuses.join(", "))
+                format!("{} {} [{}]", repo_status, path, branch_statuses.join(", "))
             }
-            _ => format!("{} {}", path, repo_status),
+            _ => format!("{} {}", repo_status, path),
         }
     }
 }
@@ -58,7 +60,7 @@ mod tests {
 
         assert_eq!(
             result,
-            format!("./repos/repo {} | master:Current", "Clean".green())
+            format!("{} ./repos/repo [master:Current]", "Clean".green())
         );
     }
 
@@ -75,7 +77,7 @@ mod tests {
 
         assert_eq!(
             result,
-            format!("./repos/repo {} | master:Current", "Dirty".red())
+            format!("{} ./repos/repo [master:Current]", "Dirty".red())
         );
     }
 
@@ -90,7 +92,7 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, format!("./repos/repo {}", "Not a repo".yellow()));
+        assert_eq!(result, format!("{} ./repos/repo", "Not a repo".yellow()));
     }
 
     #[test]
@@ -106,7 +108,7 @@ mod tests {
 
         assert_eq!(
             result,
-            format!("./repos/repo {} | master:Ahead", "Dirty".red())
+            format!("{} ./repos/repo [master:Ahead]", "Dirty".red())
         );
     }
 
@@ -121,7 +123,7 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, format!("./repos/repo {}", "Some error".red()));
+        assert_eq!(result, format!("{} ./repos/repo", "Some error".red()));
     }
 
     #[test]
@@ -137,7 +139,7 @@ mod tests {
 
         assert_eq!(
             result,
-            format!("./repos/repo {} | feature-1:NoUpstream", "Dirty".red())
+            format!("{} ./repos/repo [feature-1:NoUpstream]", "Dirty".red())
         );
     }
 }
