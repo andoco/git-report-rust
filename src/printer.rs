@@ -13,6 +13,7 @@ impl Printer for SimplePrinter {
         let repo_status = match report.repo_status {
             RepoStatus::Clean => RepoStatus::Clean.to_string().green(),
             RepoStatus::Dirty => RepoStatus::Dirty.to_string().red(),
+            RepoStatus::NoRepo => RepoStatus::NoRepo.to_string().yellow(),
             RepoStatus::Error(s) => s.red(),
         }
         .to_string();
@@ -71,6 +72,20 @@ mod tests {
             result,
             format!("./repos/repo {} | master:Current", "Dirty".red())
         );
+    }
+
+    #[test]
+    fn test_print_report_when_no_repo() {
+        let printer = SimplePrinter;
+
+        let report = RepoReport {
+            repo_status: RepoStatus::NoRepo,
+            branch_status: HashMap::new(),
+        };
+
+        let result = printer.print_report("./repos/repo", report);
+
+        assert_eq!(result, format!("./repos/repo {} | ", "Not a repo".yellow()));
     }
 
     #[test]

@@ -2,7 +2,7 @@ mod printer;
 
 use std::{collections::HashMap, env};
 
-use git2::{BranchType, Repository, Status};
+use git2::{BranchType, ErrorClass, ErrorCode, Repository, Status};
 use std::{error::Error, fs};
 
 use printer::{Printer, SimplePrinter};
@@ -17,6 +17,7 @@ pub struct RepoReport {
 enum RepoStatus {
     Clean,
     Dirty,
+    NoRepo,
     Error(String),
 }
 
@@ -33,6 +34,7 @@ impl std::fmt::Display for RepoStatus {
         match self {
             Self::Clean => write!(f, "Clean"),
             Self::Dirty => write!(f, "Dirty"),
+            Self::NoRepo => write!(f, "Not a repo"),
             Self::Error(e) => write!(f, "Error: {}", e),
         }
     }
@@ -68,18 +70,31 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn report_on_repo(path: &str) -> Result<RepoReport, Box<dyn Error>> {
-    let repo = &Repository::open(path)?;
-    let mut status = get_repo_status(repo);
-    let branches = get_branch_status(repo)?;
+    match Repository::open(path) {
+        Ok(repo) => {
+            let mut status = get_repo_status(&repo);
+            let branches = get_branch_status(&repo)?;
 
-    if branches.iter().any(|(_, v)| *v != BranchStatus::Current) {
-        status = RepoStatus::Dirty
+            if branches.iter().any(|(_, v)| *v != BranchStatus::Current) {
+                status = RepoStatus::Dirty
+            }
+
+            Ok(RepoReport {
+                repo_status: status,
+                branch_status: branches,
+            })
+        }
+        Err(error) => match (error.class(), error.code()) {
+            (ErrorClass::Repository, ErrorCode::NotFound) => Ok(RepoReport {
+                repo_status: RepoStatus::NoRepo,
+                branch_status: HashMap::new(),
+            }),
+            _ => Ok(RepoReport {
+                repo_status: RepoStatus::Error(error.message().to_string()),
+                branch_status: HashMap::new(),
+            }),
+        },
     }
-
-    Ok(RepoReport {
-        repo_status: status,
-        branch_status: branches,
-    })
 }
 
 fn get_repo_status(repo: &Repository) -> RepoStatus {
