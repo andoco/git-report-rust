@@ -1,11 +1,15 @@
+mod printer;
+
 use std::{collections::HashMap, env};
 
 use ansi_term::Colour;
 use git2::{BranchType, ErrorCode, Repository, Status};
 use std::{error::Error, fs};
 
+use printer::{Printer, SimplePrinter};
+
 #[derive(Debug)]
-struct RepoReport {
+pub struct RepoReport {
     repo_status: RepoStatus,
     branch_status: HashMap<String, BranchStatus>,
 }
@@ -54,7 +58,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         if path.is_dir() {
             let path = path.to_str().ok_or("Not a valid path")?;
             let report = report_on_repo(path);
-            print_repo_report(path, report, 60);
+
+            match report {
+                Ok(report) => {
+                    let printer = SimplePrinter;
+                    println!("{}", printer.print_report(report));
+                }
+                Err(err) => println!("ERROR: {}", err),
+            }
         }
     }
 
