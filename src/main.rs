@@ -2,7 +2,6 @@ mod printer;
 
 use std::{collections::HashMap, env};
 
-use ansi_term::Colour;
 use git2::{BranchType, ErrorCode, Repository, Status};
 use std::{error::Error, fs};
 
@@ -81,27 +80,6 @@ fn report_on_repo(path: &str) -> Result<RepoReport, Box<dyn Error>> {
         repo_status: status,
         branch_status: branches,
     })
-}
-
-fn print_repo_report(path: &str, report: Result<RepoReport, Box<dyn Error>>, column_size: usize) {
-    let to_print = match report {
-        Ok(report) => match report.repo_status {
-            RepoStatus::Clean => Colour::Green.paint("Clean"),
-            RepoStatus::Changed => Colour::Purple.paint("Changed"),
-            RepoStatus::Unpushed => Colour::Purple.paint("Not pushed"),
-            RepoStatus::NotRepo => Colour::Yellow.paint("Not a repo"),
-            RepoStatus::Error(e) => Colour::Red.paint(format!("Error {}", e)),
-        },
-        Err(e) => Colour::Red.paint(format!("Error {}", e)),
-    };
-
-    println!(
-        "{}{: <width$}{}",
-        path,
-        " ",
-        to_print,
-        width = column_size - path.len() + 1,
-    );
 }
 
 fn get_repo_status(repo: &Repository) -> RepoStatus {
