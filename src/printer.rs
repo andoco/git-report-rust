@@ -10,7 +10,7 @@ pub struct SimplePrinter;
 
 impl Printer for SimplePrinter {
     fn print_report(self, path: &str, report: RepoReport) -> String {
-        let repo_status = match report.repo_status {
+        let repo_status = match &report.repo_status {
             RepoStatus::Clean => RepoStatus::Clean.to_string().green(),
             RepoStatus::Dirty => RepoStatus::Dirty.to_string().red(),
             RepoStatus::NoRepo => RepoStatus::NoRepo.to_string().yellow(),
@@ -26,7 +26,12 @@ impl Printer for SimplePrinter {
             })
             .collect();
 
-        format!("{} {} | {}", path, repo_status, branch_statuses.join(", "))
+        match &report.repo_status {
+            RepoStatus::Clean | RepoStatus::Dirty => {
+                format!("{} {} | {}", path, repo_status, branch_statuses.join(", "))
+            }
+            _ => format!("{} {}", path, repo_status),
+        }
     }
 }
 
@@ -85,7 +90,7 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, format!("./repos/repo {} | ", "Not a repo".yellow()));
+        assert_eq!(result, format!("./repos/repo {}", "Not a repo".yellow()));
     }
 
     #[test]
@@ -116,10 +121,7 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(
-            result,
-            format!("./repos/repo {} | master:Current", "Some error".red())
-        );
+        assert_eq!(result, format!("./repos/repo {}", "Some error".red()));
     }
 
     #[test]
