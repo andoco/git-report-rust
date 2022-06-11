@@ -62,9 +62,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             match report {
                 Ok(report) => {
                     let printer = SimplePrinter;
-                    println!("{}", printer.print_report(report));
+                    println!("{}", printer.print_report(path, report));
                 }
-                Err(err) => println!("ERROR: {}", err),
+                Err(err) => println!("{} ERROR: {}", path, err),
             }
         }
     }

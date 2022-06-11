@@ -1,13 +1,13 @@
 use crate::{RepoReport, RepoStatus};
 
 pub trait Printer {
-    fn print_report(self, report: RepoReport) -> String;
+    fn print_report(self, path: &str, report: RepoReport) -> String;
 }
 
 pub struct SimplePrinter;
 
 impl Printer for SimplePrinter {
-    fn print_report(self, report: RepoReport) -> String {
+    fn print_report(self, path: &str, report: RepoReport) -> String {
         let repo_status = match report.repo_status {
             RepoStatus::Error(s) => s,
             status => format!("{:?}", status),
@@ -21,7 +21,7 @@ impl Printer for SimplePrinter {
             })
             .collect();
 
-        format!("{} | {}", repo_status, branch_statuses.join(", "))
+        format!("{} {} | {}", path, repo_status, branch_statuses.join(", "))
     }
 }
 
@@ -42,9 +42,9 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report(report);
+        let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "Clean | master:Current");
+        assert_eq!(result, "./repos/repo Clean | master:Current");
     }
 
     #[test]
@@ -56,9 +56,9 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report(report);
+        let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "Changed | master:Current");
+        assert_eq!(result, "./repos/repo Changed | master:Current");
     }
 
     #[test]
@@ -70,9 +70,9 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report(report);
+        let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "Unpushed | master:Current");
+        assert_eq!(result, "./repos/repo Unpushed | master:Current");
     }
 
     #[test]
@@ -84,9 +84,9 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report(report);
+        let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "NotRepo | master:Current");
+        assert_eq!(result, "./repos/repo NotRepo | master:Current");
     }
 
     #[test]
@@ -98,9 +98,9 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report(report);
+        let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "Some error | master:Current");
+        assert_eq!(result, "./repos/repo Some error | master:Current");
     }
 
     #[test]
@@ -112,8 +112,8 @@ mod tests {
             branch_status: HashMap::from([("feature-1".to_string(), BranchStatus::NoUpstream)]),
         };
 
-        let result = printer.print_report(report);
+        let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "Clean | feature-1:NoUpstream");
+        assert_eq!(result, "./repos/repo Clean | feature-1:NoUpstream");
     }
 }
