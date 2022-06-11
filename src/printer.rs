@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{RepoReport, RepoStatus};
 
 pub trait Printer {
@@ -9,9 +11,11 @@ pub struct SimplePrinter;
 impl Printer for SimplePrinter {
     fn print_report(self, path: &str, report: RepoReport) -> String {
         let repo_status = match report.repo_status {
-            RepoStatus::Error(s) => s,
-            status => format!("{:?}", status),
-        };
+            RepoStatus::Clean => RepoStatus::Clean.to_string().green(),
+            RepoStatus::Dirty => RepoStatus::Dirty.to_string().red(),
+            RepoStatus::Error(s) => s.red(),
+        }
+        .to_string();
 
         let branch_statuses: Vec<String> = report
             .branch_status
@@ -29,6 +33,8 @@ impl Printer for SimplePrinter {
 mod tests {
     use std::collections::HashMap;
 
+    use colored::Colorize;
+
     use crate::{BranchStatus, RepoStatus};
 
     use super::*;
@@ -44,49 +50,44 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "./repos/repo Clean | master:Current");
+        assert_eq!(
+            result,
+            format!("./repos/repo {} | master:Current", "Clean".green())
+        );
     }
 
     #[test]
-    fn test_print_report_when_changed() {
+    fn test_print_report_when_dirty() {
         let printer = SimplePrinter;
 
         let report = RepoReport {
-            repo_status: RepoStatus::Changed,
+            repo_status: RepoStatus::Dirty,
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "./repos/repo Changed | master:Current");
+        assert_eq!(
+            result,
+            format!("./repos/repo {} | master:Current", "Dirty".red())
+        );
     }
 
     #[test]
-    fn test_print_report_when_unpushed() {
+    fn test_print_report_when_unpushed_branch() {
         let printer = SimplePrinter;
 
         let report = RepoReport {
-            repo_status: RepoStatus::Unpushed,
-            branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
+            repo_status: RepoStatus::Dirty,
+            branch_status: HashMap::from([("master".to_string(), BranchStatus::Ahead)]),
         };
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "./repos/repo Unpushed | master:Current");
-    }
-
-    #[test]
-    fn test_print_report_when_not_repo() {
-        let printer = SimplePrinter;
-
-        let report = RepoReport {
-            repo_status: RepoStatus::NotRepo,
-            branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
-        };
-
-        let result = printer.print_report("./repos/repo", report);
-
-        assert_eq!(result, "./repos/repo NotRepo | master:Current");
+        assert_eq!(
+            result,
+            format!("./repos/repo {} | master:Ahead", "Dirty".red())
+        );
     }
 
     #[test]
@@ -100,7 +101,10 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "./repos/repo Some error | master:Current");
+        assert_eq!(
+            result,
+            format!("./repos/repo {} | master:Current", "Some error".red())
+        );
     }
 
     #[test]
@@ -108,12 +112,15 @@ mod tests {
         let printer = SimplePrinter;
 
         let report = RepoReport {
-            repo_status: RepoStatus::Clean,
+            repo_status: RepoStatus::Dirty,
             branch_status: HashMap::from([("feature-1".to_string(), BranchStatus::NoUpstream)]),
         };
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, "./repos/repo Clean | feature-1:NoUpstream");
+        assert_eq!(
+            result,
+            format!("./repos/repo {} | feature-1:NoUpstream", "Dirty".red())
+        );
     }
 }

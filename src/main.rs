@@ -2,7 +2,7 @@ mod printer;
 
 use std::{collections::HashMap, env};
 
-use git2::{BranchType, ErrorCode, Repository, Status};
+use git2::{BranchType, Repository, Status};
 use std::{error::Error, fs};
 
 use printer::{Printer, SimplePrinter};
@@ -16,13 +16,11 @@ pub struct RepoReport {
 #[derive(Debug, PartialEq)]
 enum RepoStatus {
     Clean,
-    Changed,
-    Unpushed,
-    NotRepo,
+    Dirty,
     Error(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum BranchStatus {
     Current,
     NoUpstream,
@@ -34,9 +32,7 @@ impl std::fmt::Display for RepoStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Clean => write!(f, "Clean"),
-            Self::Changed => write!(f, "Changed"),
-            Self::Unpushed => write!(f, "Unpushed"),
-            Self::NotRepo => write!(f, "Not a repo"),
+            Self::Dirty => write!(f, "Dirty"),
             Self::Error(e) => write!(f, "Error: {}", e),
         }
     }
@@ -73,8 +69,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn report_on_repo(path: &str) -> Result<RepoReport, Box<dyn Error>> {
     let repo = &Repository::open(path)?;
-    let status = get_repo_status(repo);
+    let mut status = get_repo_status(repo);
     let branches = get_branch_status(repo)?;
+
+    if branches.iter().any(|(_, v)| *v != BranchStatus::Current) {
+        status = RepoStatus::Dirty
+    }
 
     Ok(RepoReport {
         repo_status: status,
@@ -90,8 +90,8 @@ fn get_repo_status(repo: &Repository) -> RepoStatus {
                 .map(|s| s.status())
                 .map(|s| map_git_status_to_report_status(&s));
 
-            if report_statuses.any(|s| s == RepoStatus::Changed) {
-                return RepoStatus::Changed;
+            if report_statuses.any(|s| s == RepoStatus::Dirty) {
+                return RepoStatus::Dirty;
             }
 
             return RepoStatus::Clean;
@@ -138,13 +138,6 @@ fn get_branch_status(repo: &Repository) -> Result<HashMap<String, BranchStatus>,
     Ok(branch_changes)
 }
 
-fn map_git_error_to_repo_status(err: git2::Error) -> RepoStatus {
-    if err.code() == ErrorCode::NotFound {
-        return RepoStatus::NotRepo;
-    }
-    RepoStatus::Error(err.to_string())
-}
-
 fn map_git_status_to_report_status(status: &Status) -> RepoStatus {
     let changed_mask = Status::INDEX_NEW
         | Status::INDEX_MODIFIED
@@ -160,7 +153,7 @@ fn map_git_status_to_report_status(status: &Status) -> RepoStatus {
     let has_changes = *status & changed_mask == *status;
 
     if has_changes {
-        return RepoStatus::Changed;
+        return RepoStatus::Dirty;
     }
 
     return RepoStatus::Clean;
@@ -186,7 +179,7 @@ mod tests {
         ];
 
         for status in expected_changed_statuses.iter() {
-            assert_eq!(RepoStatus::Changed, map_git_status_to_report_status(status))
+            assert_eq!(RepoStatus::Dirty, map_git_status_to_report_status(status))
         }
     }
 }
