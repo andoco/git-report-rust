@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use colored::Colorize;
 
 use crate::{RepoReport, RepoStatus};
