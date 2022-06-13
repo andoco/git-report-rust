@@ -67,7 +67,7 @@ mod tests {
 
         create_dir(root.join("dir1")).unwrap();
         create_dir(root.join("dir2")).unwrap();
-        File::create("file1.txt").unwrap();
+        File::create(root.join("file1.txt")).unwrap();
 
         let scanner = RecursiveScanner {};
 
@@ -114,7 +114,7 @@ mod tests {
         let root = temp_root.path();
 
         create_dir(root.join("dir2")).unwrap();
-        File::create("file1.txt").unwrap();
+        File::create(root.join("file1.txt")).unwrap();
         Repository::init(&root.join("repo1")).unwrap();
         Repository::init(&root.join("repo2")).unwrap();
 
