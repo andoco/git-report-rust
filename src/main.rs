@@ -1,9 +1,11 @@
 mod printer;
+mod scanner;
 
 use std::{collections::HashMap, env};
 
 use git2::{BranchType, ErrorClass, ErrorCode, Repository, Status};
-use std::{error::Error, fs};
+use scanner::{RecursiveScanner, Scanner};
+use std::error::Error;
 
 use printer::{Printer, SimplePrinter};
 
@@ -48,21 +50,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         None => ".",
     };
 
-    for entry in fs::read_dir(root_path)? {
-        let entry = entry?;
-        let path = entry.path();
+    let scanner = RecursiveScanner {};
+    let repo_paths = scanner.scan(root_path)?;
 
-        if path.is_dir() {
-            let path = path.to_str().ok_or("Not a valid path")?;
-            let report = report_on_repo(path);
+    for path in repo_paths {
+        let path = path.to_str().unwrap();
+        let report = report_on_repo(path);
 
-            match report {
-                Ok(report) => {
-                    let printer = SimplePrinter;
-                    println!("{}", printer.print_report(path, report));
-                }
-                Err(err) => println!("{} ERROR: {}", path, err),
+        match report {
+            Ok(report) => {
+                let printer = SimplePrinter;
+                println!("{}", printer.print_report(path, report));
             }
+            Err(err) => println!("{} ERROR: {}", path, err),
         }
     }
 
