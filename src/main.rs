@@ -1,13 +1,26 @@
 mod printer;
 mod scanner;
 
-use std::{collections::HashMap, env};
+use std::collections::HashMap;
 
+use clap::Parser;
 use git2::{BranchType, ErrorClass, ErrorCode, Repository, Status};
 use scanner::{RecursiveScanner, Scanner};
 use std::error::Error;
 
 use printer::{Printer, SimplePrinter};
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Root path to scan for git repos
+    #[clap(short, long, value_parser)]
+    path: String,
+
+    /// Folder depth to find git repos at within root path
+    #[clap(short, long, value_parser, default_value_t = 0)]
+    depth: u8,
+}
 
 #[derive(Debug)]
 pub struct RepoReport {
@@ -43,15 +56,10 @@ impl std::fmt::Display for RepoStatus {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-
-    let root_path = match args.get(1) {
-        Some(path) => path,
-        None => ".",
-    };
+    let args = Args::parse();
 
     let scanner = RecursiveScanner {};
-    let repo_paths = scanner.scan(root_path)?;
+    let repo_paths = scanner.scan(args.path.as_str(), args.depth)?;
 
     for path in repo_paths {
         let path = path.to_str().unwrap();
