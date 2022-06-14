@@ -1,13 +1,18 @@
-use std::{error::Error, fs::read_dir, path::PathBuf, vec};
+use std::{
+    error::Error,
+    fs::read_dir,
+    path::{Path, PathBuf},
+    vec,
+};
 
 pub trait Scanner {
-    fn scan(&self, root: &str, depth: u8) -> Result<Vec<PathBuf>, Box<dyn Error>>;
+    fn scan(&self, root: &Path, depth: u8) -> Result<Vec<PathBuf>, Box<dyn Error>>;
 }
 
 pub struct RecursiveScanner;
 
 impl Scanner for RecursiveScanner {
-    fn scan(&self, root: &str, depth: u8) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    fn scan(&self, root: &Path, depth: u8) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         let mut repos: Vec<PathBuf> = vec![];
         let dir_entries = read_dir(root)?;
 
@@ -18,7 +23,7 @@ impl Scanner for RecursiveScanner {
                     if depth == 0 {
                         repos.push(path);
                     } else {
-                        let mut child_repos = self.scan(path.to_str().unwrap(), depth - 1)?;
+                        let mut child_repos = self.scan(&path, depth - 1)?;
                         repos.append(&mut child_repos);
                     }
                 }
@@ -44,7 +49,7 @@ mod tests {
 
         let scanner = RecursiveScanner {};
 
-        let result = scanner.scan(&root.to_str().unwrap(), 0).unwrap();
+        let result = scanner.scan(&root, 0).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -58,7 +63,7 @@ mod tests {
 
         let scanner = RecursiveScanner {};
 
-        let result = scanner.scan(&root.to_str().unwrap(), 0).unwrap();
+        let result = scanner.scan(&root, 0).unwrap();
 
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], root.join("repo1"));
@@ -74,7 +79,7 @@ mod tests {
 
         let scanner = RecursiveScanner {};
 
-        let result = scanner.scan(&root.to_str().unwrap(), 0).unwrap();
+        let result = scanner.scan(&root, 0).unwrap();
 
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], root.join("repo1"));
@@ -93,7 +98,7 @@ mod tests {
 
         let scanner = RecursiveScanner {};
 
-        let result = scanner.scan(&root.to_str().unwrap(), 0).unwrap();
+        let result = scanner.scan(&root, 0).unwrap();
 
         assert_eq!(result.len(), 3);
         assert!(result.contains(&root.join("non-repo")));
@@ -114,7 +119,7 @@ mod tests {
 
         let scanner = RecursiveScanner {};
 
-        let result = scanner.scan(&root.to_str().unwrap(), 1).unwrap();
+        let result = scanner.scan(&root, 1).unwrap();
 
         assert_eq!(result.len(), 2);
         assert!(result.contains(&root.join("dir1").join("repo1")));

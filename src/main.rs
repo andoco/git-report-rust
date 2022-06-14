@@ -6,7 +6,7 @@ use clap::Parser;
 
 use reporter::{Git2Reporter, Reporter};
 use scanner::{RecursiveScanner, Scanner};
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
 
 use printer::{Printer, SimplePrinter};
 
@@ -15,7 +15,7 @@ use printer::{Printer, SimplePrinter};
 struct Args {
     /// Root path to scan for git repos
     #[clap(short, long, value_parser)]
-    path: String,
+    path: PathBuf,
 
     /// Folder depth to find git repos at within root path
     #[clap(short, long, value_parser, default_value_t = 0)]
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let scanner = RecursiveScanner {};
-    let repo_paths = scanner.scan(args.path.as_str(), args.depth)?;
+    let repo_paths = scanner.scan(&args.path, args.depth)?;
 
     let reporter = Git2Reporter {};
 
