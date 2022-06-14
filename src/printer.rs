@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-use crate::{RepoReport, RepoStatus};
+use crate::reporter::{RepoReport, RepoStatus};
 
 pub trait Printer {
     fn print_report(self, path: &str, report: RepoReport) -> String;
@@ -41,7 +41,7 @@ mod tests {
 
     use colored::Colorize;
 
-    use crate::{BranchStatus, RepoStatus};
+    use crate::reporter::BranchStatus;
 
     use super::*;
 
