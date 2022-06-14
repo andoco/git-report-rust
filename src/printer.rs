@@ -90,7 +90,7 @@ mod tests {
 
         let result = printer.print_report("./repos/repo", report);
 
-        assert_eq!(result, format!("{} ./repos/repo", "Not a repo".yellow()));
+        assert_eq!(result, format!("{} ./repos/repo", "None".yellow()));
     }
 
     #[test]

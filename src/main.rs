@@ -49,7 +49,7 @@ impl std::fmt::Display for RepoStatus {
         match self {
             Self::Clean => write!(f, "Clean"),
             Self::Dirty => write!(f, "Dirty"),
-            Self::NoRepo => write!(f, "Not a repo"),
+            Self::NoRepo => write!(f, "None"),
             Self::Error(e) => write!(f, "Error: {}", e),
         }
     }
