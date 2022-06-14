@@ -1,15 +1,17 @@
+use std::path::Path;
+
 use colored::Colorize;
 
 use crate::reporter::{RepoReport, RepoStatus};
 
 pub trait Printer {
-    fn print_report(self, path: &str, report: RepoReport) -> String;
+    fn print_report(self, path: &Path, report: RepoReport) -> String;
 }
 
 pub struct SimplePrinter;
 
 impl Printer for SimplePrinter {
-    fn print_report(self, path: &str, report: RepoReport) -> String {
+    fn print_report(self, path: &Path, report: RepoReport) -> String {
         let repo_status = match &report.repo_status {
             RepoStatus::Clean => RepoStatus::Clean.to_string().green(),
             RepoStatus::Dirty => RepoStatus::Dirty.to_string().red(),
@@ -28,16 +30,21 @@ impl Printer for SimplePrinter {
 
         match &report.repo_status {
             RepoStatus::Clean | RepoStatus::Dirty => {
-                format!("{} {} [{}]", repo_status, path, branch_statuses.join(", "))
+                format!(
+                    "{} {} [{}]",
+                    repo_status,
+                    path.display(),
+                    branch_statuses.join(", ")
+                )
             }
-            _ => format!("{} {}", repo_status, path),
+            _ => format!("{} {}", repo_status, path.display()),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, path::PathBuf};
 
     use colored::Colorize;
 
@@ -54,7 +61,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report("./repos/repo", report);
+        let result = printer.print_report(PathBuf::from("./repos/repo").as_path(), report);
 
         assert_eq!(
             result,
@@ -71,7 +78,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report("./repos/repo", report);
+        let result = printer.print_report(PathBuf::from("./repos/repo").as_path(), report);
 
         assert_eq!(
             result,
@@ -88,7 +95,7 @@ mod tests {
             branch_status: HashMap::new(),
         };
 
-        let result = printer.print_report("./repos/repo", report);
+        let result = printer.print_report(PathBuf::from("./repos/repo").as_path(), report);
 
         assert_eq!(result, format!("{} ./repos/repo", "None".yellow()));
     }
@@ -102,7 +109,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Ahead)]),
         };
 
-        let result = printer.print_report("./repos/repo", report);
+        let result = printer.print_report(PathBuf::from("./repos/repo").as_path(), report);
 
         assert_eq!(
             result,
@@ -119,7 +126,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let result = printer.print_report("./repos/repo", report);
+        let result = printer.print_report(PathBuf::from("./repos/repo").as_path(), report);
 
         assert_eq!(result, format!("{} ./repos/repo", "Some error".red()));
     }
@@ -133,7 +140,7 @@ mod tests {
             branch_status: HashMap::from([("feature-1".to_string(), BranchStatus::NoUpstream)]),
         };
 
-        let result = printer.print_report("./repos/repo", report);
+        let result = printer.print_report(PathBuf::from("./repos/repo").as_path(), report);
 
         assert_eq!(
             result,
