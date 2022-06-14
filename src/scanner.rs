@@ -1,18 +1,40 @@
 use std::{
     error::Error,
+    fmt,
     fs::read_dir,
     path::{Path, PathBuf},
     vec,
 };
 
+#[derive(Debug)]
+pub struct ScannerError {
+    pub cause: Box<dyn Error>,
+}
+
+impl Error for ScannerError {}
+
+impl fmt::Display for ScannerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error scanning for folders: {}", self.cause)
+    }
+}
+
+impl From<std::io::Error> for ScannerError {
+    fn from(error: std::io::Error) -> Self {
+        ScannerError {
+            cause: Box::new(error),
+        }
+    }
+}
+
 pub trait Scanner {
-    fn scan(&self, root: &Path, depth: u8) -> Result<Vec<PathBuf>, Box<dyn Error>>;
+    fn scan(&self, root: &Path, depth: u8) -> Result<Vec<PathBuf>, ScannerError>;
 }
 
 pub struct RecursiveScanner;
 
 impl Scanner for RecursiveScanner {
-    fn scan(&self, root: &Path, depth: u8) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    fn scan(&self, root: &Path, depth: u8) -> Result<Vec<PathBuf>, ScannerError> {
         let mut repos: Vec<PathBuf> = vec![];
         let dir_entries = read_dir(root)?;
 
