@@ -11,7 +11,7 @@ pub fn get_args() -> Args {
     let matches = command!()
         .arg(
             arg!([NAME] "Root path to scan for git repos")
-                .required(true)
+                .required(false)
                 .value_parser(value_parser!(PathBuf)),
         )
         .arg(

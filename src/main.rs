@@ -6,7 +6,7 @@ mod scanner;
 use cli::get_args;
 use reporter::{Git2Reporter, Reporter};
 use scanner::{RecursiveScanner, Scanner};
-use std::error::Error;
+use std::{env::current_dir, error::Error};
 
 use printer::{Printer, SimplePrinter};
 
@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
 
     let scanner = RecursiveScanner {};
-    let repo_paths = scanner.scan(&args.path.unwrap(), args.depth)?;
+    let repo_paths = scanner.scan(&args.path.unwrap_or(current_dir().unwrap()), args.depth)?;
 
     let reporter = Git2Reporter {};
 
