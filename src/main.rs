@@ -1,35 +1,20 @@
+mod cli;
 mod printer;
 mod reporter;
 mod scanner;
 
-use clap::{arg, command, value_parser};
-
+use cli::get_args;
 use reporter::{Git2Reporter, Reporter};
 use scanner::{RecursiveScanner, Scanner};
-use std::{error::Error, path::PathBuf};
+use std::error::Error;
 
 use printer::{Printer, SimplePrinter};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = command!()
-        .arg(
-            arg!([NAME] "Root path to scan for git repos")
-                .required(true)
-                .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(
-            arg!(-d --depth <DEPTH> "Folder depth to find git repos at within root path")
-                .value_parser(value_parser!(u8))
-                .required(false)
-                .default_value("0"),
-        )
-        .get_matches();
-
-    let root_path = matches.get_one::<PathBuf>("NAME").unwrap();
-    let depth = matches.get_one::<u8>("depth").unwrap();
+    let args = get_args();
 
     let scanner = RecursiveScanner {};
-    let repo_paths = scanner.scan(root_path, *depth)?;
+    let repo_paths = scanner.scan(&args.path.unwrap(), args.depth)?;
 
     let reporter = Git2Reporter {};
 
