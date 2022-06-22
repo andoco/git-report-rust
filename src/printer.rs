@@ -5,7 +5,7 @@ use colored::Colorize;
 use crate::reporter::{RepoReport, RepoStatus};
 
 pub trait Printer {
-    fn print_report<'a, T>(&self, reports: T, buf: impl Write)
+    fn print_report<T>(&self, reports: T, buf: impl Write)
     where
         T: IntoIterator<Item = RepoReport>;
 }
@@ -13,7 +13,7 @@ pub trait Printer {
 pub struct SimplePrinter;
 
 impl Printer for SimplePrinter {
-    fn print_report<'a, T>(&self, reports: T, mut buf: impl Write)
+    fn print_report<T>(&self, reports: T, mut buf: impl Write)
     where
         T: IntoIterator<Item = RepoReport>,
     {
