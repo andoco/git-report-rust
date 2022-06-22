@@ -6,14 +6,14 @@ use std::{
 
 use git2::{BranchType, ErrorClass, ErrorCode, Repository, Status};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RepoReport {
     pub path: PathBuf,
     pub repo_status: RepoStatus,
     pub branch_status: HashMap<String, BranchStatus>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RepoStatus {
     Clean,
     Dirty,
@@ -32,7 +32,7 @@ impl std::fmt::Display for RepoStatus {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BranchStatus {
     Current,
     NoUpstream,
