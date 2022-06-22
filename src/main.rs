@@ -17,24 +17,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let repo_paths = scanner.scan(&args.path.unwrap_or(current_dir().unwrap()), args.depth)?;
 
     let reporter = Git2Reporter {};
+    let reports = repo_paths.iter().map(|path| reporter.report(path));
 
-    for path in repo_paths {
-        let report = reporter.report(path.as_path());
+    let mut buf: Vec<u8> = Vec::new();
+    let printer = SimplePrinter;
+    reports.for_each(|report| printer.print_report(report.unwrap(), &mut buf));
 
-        let mut buf: Vec<u8> = Vec::new();
-
-        match report {
-            Ok(report) => {
-                let printer = SimplePrinter;
-                printer.print_report(&path, report, &mut buf);
-            }
-            Err(err) => println!("{:?} ERROR: {}", path, err),
-        }
-
-        let output = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
-
-        println!("{}", output);
-    }
+    let output = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
+    println!("{}", output);
 
     Ok(())
 }

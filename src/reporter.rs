@@ -1,9 +1,14 @@
-use std::{collections::HashMap, error::Error, path::Path};
+use std::{
+    collections::HashMap,
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use git2::{BranchType, ErrorClass, ErrorCode, Repository, Status};
 
 #[derive(Debug)]
 pub struct RepoReport {
+    pub path: PathBuf,
     pub repo_status: RepoStatus,
     pub branch_status: HashMap<String, BranchStatus>,
 }
@@ -53,16 +58,19 @@ impl Reporter for Git2Reporter {
                 }
 
                 Ok(RepoReport {
+                    path: path.to_path_buf(),
                     repo_status: status,
                     branch_status: branches,
                 })
             }
             Err(error) => match (error.class(), error.code()) {
                 (ErrorClass::Repository, ErrorCode::NotFound) => Ok(RepoReport {
+                    path: path.to_path_buf(),
                     repo_status: RepoStatus::NoRepo,
                     branch_status: HashMap::new(),
                 }),
                 _ => Ok(RepoReport {
+                    path: path.to_path_buf(),
                     repo_status: RepoStatus::Error(error.message().to_string()),
                     branch_status: HashMap::new(),
                 }),

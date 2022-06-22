@@ -1,17 +1,17 @@
-use std::{io::Write, path::Path};
+use std::io::Write;
 
 use colored::Colorize;
 
 use crate::reporter::{RepoReport, RepoStatus};
 
 pub trait Printer {
-    fn print_report(self, path: &Path, report: RepoReport, buf: impl Write);
+    fn print_report(&self, report: RepoReport, buf: impl Write);
 }
 
 pub struct SimplePrinter;
 
 impl Printer for SimplePrinter {
-    fn print_report(self, path: &Path, report: RepoReport, mut buf: impl Write) {
+    fn print_report(&self, report: RepoReport, mut buf: impl Write) {
         let repo_status = match &report.repo_status {
             RepoStatus::Clean => RepoStatus::Clean.to_string().green(),
             RepoStatus::Dirty => RepoStatus::Dirty.to_string().red(),
@@ -31,15 +31,15 @@ impl Printer for SimplePrinter {
         match &report.repo_status {
             RepoStatus::Clean | RepoStatus::Dirty => {
                 buf.write_fmt(format_args!(
-                    "{} {} [{}]",
+                    "{} {} [{}]\n",
                     repo_status,
-                    path.display(),
+                    report.path.display(),
                     branch_statuses.join(", ")
                 ))
                 .unwrap();
             }
             _ => {
-                buf.write_fmt(format_args!("{} {}", repo_status, path.display()))
+                buf.write_fmt(format_args!("{} {}\n", repo_status, report.path.display()))
                     .unwrap();
             }
         }
@@ -71,15 +71,16 @@ mod tests {
         let (printer, mut buf) = setup();
 
         let report = RepoReport {
+            path: PathBuf::from("./repos/repo"),
             repo_status: RepoStatus::Clean,
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        printer.print_report(PathBuf::from("./repos/repo").as_path(), report, &mut buf);
+        printer.print_report(report, &mut buf);
 
         assert_output(
             &buf,
-            format!("{} ./repos/repo [master:Current]", "Clean".green()),
+            format!("{} ./repos/repo [master:Current]\n", "Clean".green()),
         );
     }
 
@@ -88,15 +89,16 @@ mod tests {
         let (printer, mut buf) = setup();
 
         let report = RepoReport {
+            path: PathBuf::from("./repos/repo"),
             repo_status: RepoStatus::Dirty,
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        printer.print_report(PathBuf::from("./repos/repo").as_path(), report, &mut buf);
+        printer.print_report(report, &mut buf);
 
         assert_output(
             &buf,
-            format!("{} ./repos/repo [master:Current]", "Dirty".red()),
+            format!("{} ./repos/repo [master:Current]\n", "Dirty".red()),
         );
     }
 
@@ -105,13 +107,14 @@ mod tests {
         let (printer, mut buf) = setup();
 
         let report = RepoReport {
+            path: PathBuf::from("./repos/repo"),
             repo_status: RepoStatus::NoRepo,
             branch_status: HashMap::new(),
         };
 
-        printer.print_report(PathBuf::from("./repos/repo").as_path(), report, &mut buf);
+        printer.print_report(report, &mut buf);
 
-        assert_output(&buf, format!("{} ./repos/repo", "None".yellow()));
+        assert_output(&buf, format!("{} ./repos/repo\n", "None".yellow()));
     }
 
     #[test]
@@ -119,15 +122,16 @@ mod tests {
         let (printer, mut buf) = setup();
 
         let report = RepoReport {
+            path: PathBuf::from("./repos/repo"),
             repo_status: RepoStatus::Dirty,
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Ahead)]),
         };
 
-        printer.print_report(PathBuf::from("./repos/repo").as_path(), report, &mut buf);
+        printer.print_report(report, &mut buf);
 
         assert_output(
             &buf,
-            format!("{} ./repos/repo [master:Ahead]", "Dirty".red()),
+            format!("{} ./repos/repo [master:Ahead]\n", "Dirty".red()),
         );
     }
 
@@ -136,13 +140,14 @@ mod tests {
         let (printer, mut buf) = setup();
 
         let report = RepoReport {
+            path: PathBuf::from("./repos/repo"),
             repo_status: RepoStatus::Error("Some error".to_string()),
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        printer.print_report(PathBuf::from("./repos/repo").as_path(), report, &mut buf);
+        printer.print_report(report, &mut buf);
 
-        assert_output(&buf, format!("{} ./repos/repo", "Some error".red()));
+        assert_output(&buf, format!("{} ./repos/repo\n", "Some error".red()));
     }
 
     #[test]
@@ -150,15 +155,16 @@ mod tests {
         let (printer, mut buf) = setup();
 
         let report = RepoReport {
+            path: PathBuf::from("./repos/repo"),
             repo_status: RepoStatus::Dirty,
             branch_status: HashMap::from([("feature-1".to_string(), BranchStatus::NoUpstream)]),
         };
 
-        printer.print_report(PathBuf::from("./repos/repo").as_path(), report, &mut buf);
+        printer.print_report(report, &mut buf);
 
         assert_output(
             &buf,
-            format!("{} ./repos/repo [feature-1:NoUpstream]", "Dirty".red()),
+            format!("{} ./repos/repo [feature-1:NoUpstream]\n", "Dirty".red()),
         );
     }
 }
