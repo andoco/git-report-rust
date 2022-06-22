@@ -10,6 +10,8 @@ use std::{env::current_dir, error::Error};
 
 use printer::{Printer, SimplePrinter};
 
+use crate::reporter::RepoReport;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
 
@@ -17,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let repo_paths = scanner.scan(&args.path.unwrap_or(current_dir().unwrap()), args.depth)?;
 
     let reporter = Git2Reporter {};
-    let reports = repo_paths
+    let reports: Vec<RepoReport> = repo_paths
         .iter()
         .map(|path| reporter.report(path).unwrap())
         .collect();

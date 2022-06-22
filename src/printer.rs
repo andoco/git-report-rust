@@ -5,14 +5,19 @@ use colored::Colorize;
 use crate::reporter::{RepoReport, RepoStatus};
 
 pub trait Printer {
-    fn print_report(&self, reports: Vec<RepoReport>, buf: impl Write);
+    fn print_report<'a, T>(&self, reports: T, buf: impl Write)
+    where
+        T: IntoIterator<Item = RepoReport>;
 }
 
 pub struct SimplePrinter;
 
 impl Printer for SimplePrinter {
-    fn print_report<'a>(&self, reports: Vec<RepoReport>, mut buf: impl Write) {
-        for report in reports.iter() {
+    fn print_report<'a, T>(&self, reports: T, mut buf: impl Write)
+    where
+        T: IntoIterator<Item = RepoReport>,
+    {
+        for report in reports.into_iter() {
             let repo_status = match &report.repo_status {
                 RepoStatus::Clean => RepoStatus::Clean.to_string().green(),
                 RepoStatus::Dirty => RepoStatus::Dirty.to_string().red(),
