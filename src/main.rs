@@ -1,35 +1,34 @@
 mod cli;
-mod printer;
 mod reporter;
-mod scanner;
+mod visitor;
 
 use cli::get_args;
 use reporter::{Git2Reporter, Reporter};
-use scanner::{RecursiveScanner, Scanner};
-use std::{env::current_dir, error::Error};
 
-use printer::{Printer, SimplePrinter};
+use std::{env::current_dir, error::Error, path::Path};
+use visitor::{SimpleWalker, State, Walker};
 
-use crate::reporter::RepoReport;
+use crate::visitor::Status;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
-
-    let scanner = RecursiveScanner {};
-    let repo_paths = scanner.scan(&args.path.unwrap_or(current_dir().unwrap()), args.depth)?;
-
+    let path = &args.path.unwrap_or(current_dir().unwrap());
     let reporter = Git2Reporter {};
-    let reports: Vec<RepoReport> = repo_paths
-        .iter()
-        .map(|path| reporter.report(path).unwrap())
-        .collect();
+    let walker = SimpleWalker::new();
 
-    let printer = SimplePrinter;
-    let mut buf: Vec<u8> = Vec::new();
-    printer.print_report(reports, &mut buf);
+    let mut visitor = |path: &Path, state: &State| {
+        let report = reporter.report(path).unwrap();
+        for (i, (name, status)) in report.branch_status.iter().enumerate() {
+            if i < report.branch_status.len() - 1 {
+                state.extend(Status::Open).print();
+            } else {
+                state.extend(Status::Terminal).print();
+            }
+            println!("{} - {:?}", name, status);
+        }
+    };
 
-    let output = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
-    println!("{}", output);
+    walker.walk(path, args.depth, State::new(), &mut visitor);
 
     Ok(())
 }
