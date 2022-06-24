@@ -21,12 +21,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut visitor = |path: &Path, stack: &PrintStack| {
         let report = reporter.report(path).unwrap();
         for (i, (name, status)) in report.branch_status.iter().enumerate() {
+            let txt = format!("{} - {:?}", name, status);
             if i < report.branch_status.len() - 1 {
-                stack.extend(Node::Open).print(std::io::stdout());
+                stack.extend(Node::Open(txt)).print(std::io::stdout());
             } else {
-                stack.extend(Node::Terminal).print(std::io::stdout());
+                stack.extend(Node::Terminal(txt)).print(std::io::stdout());
             }
-            println!("{} - {:?}", name, status);
+            println!();
         }
     };
 

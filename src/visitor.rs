@@ -29,7 +29,7 @@ impl Walker for SimpleWalker {
         visitor: &mut dyn FnMut(&Path, &PrintStack),
     ) {
         stack.print(std::io::stdout());
-        println!("{}", root.file_name().unwrap().to_str().unwrap());
+        println!();
 
         if depth == 0 {
             visitor(&root, &stack);
@@ -41,10 +41,11 @@ impl Walker for SimpleWalker {
         for (i, entry) in dir_entries.iter().enumerate() {
             if let Ok(entry) = entry {
                 let path = entry.path();
+                let name = format!("{}", path.file_name().unwrap().to_str().unwrap());
 
                 let new_stack = match i {
-                    i if i == dir_entries.len() - 1 => stack.extend(Node::Terminal),
-                    _ => stack.extend(Node::Open),
+                    i if i == dir_entries.len() - 1 => stack.extend(Node::Terminal(name)),
+                    _ => stack.extend(Node::Open(name)),
                 };
                 self.walk(&path, depth - 1, new_stack, visitor);
             }
