@@ -29,7 +29,6 @@ impl Walker for SimpleWalker {
         visitor: &mut dyn FnMut(&Path, &PrintStack),
     ) {
         stack.print(std::io::stdout());
-        println!();
 
         if depth == 0 {
             visitor(&root, &stack);

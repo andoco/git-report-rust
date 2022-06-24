@@ -43,7 +43,8 @@ impl PrintStack {
                 Node::Empty => "   ".to_string(),
             };
             write!(out, "{}", s).unwrap();
-        })
+        });
+        writeln!(out).unwrap();
     }
 }
 
@@ -102,21 +103,21 @@ mod tests {
 
         let stack1 = PrintStack::new();
         stack1.print(&mut out);
-        assert_eq!(from_utf8(&out).unwrap(), "");
+        assert_eq!(from_utf8(&out).unwrap(), "\n");
 
         let stack2 = stack1.extend(Node::Open("a".to_string()));
         out.clear();
         stack2.print(&mut out);
-        assert_eq!(from_utf8(&out).unwrap(), "├── a");
+        assert_eq!(from_utf8(&out).unwrap(), "├── a\n");
 
         let stack3 = stack2.extend(Node::Open("b".to_string()));
         out.clear();
         stack3.print(&mut out);
-        assert_eq!(from_utf8(&out).unwrap(), "│  ├── b");
+        assert_eq!(from_utf8(&out).unwrap(), "│  ├── b\n");
 
         let stack4 = stack3.extend(Node::Terminal("c".to_string()));
         out.clear();
         stack4.print(&mut out);
-        assert_eq!(from_utf8(&out).unwrap(), "│  │  └── c");
+        assert_eq!(from_utf8(&out).unwrap(), "│  │  └── c\n");
     }
 }

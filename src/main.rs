@@ -27,7 +27,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             } else {
                 stack.extend(Node::Terminal(txt)).print(std::io::stdout());
             }
-            println!();
         }
     };
 
