@@ -7,7 +7,7 @@ use cli::get_args;
 use print_stack::PrintStack;
 use reporter::{Git2Reporter, Reporter};
 
-use std::{env::current_dir, error::Error, path::Path};
+use std::{env::current_dir, error::Error, io::Write, path::Path};
 use visitor::{SimpleWalker, Walker};
 
 use crate::print_stack::Node;
@@ -18,7 +18,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reporter = Git2Reporter {};
     let walker = SimpleWalker::new();
     let mut out = std::io::stdout();
-    let mut stack = PrintStack::new(&mut out);
 
     let mut visitor = |path: &Path, stack: &mut PrintStack| {
         let report = reporter.report(path).unwrap();
@@ -31,6 +30,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     };
+
+    write!(&out, "{}", path.to_str().unwrap()).unwrap();
+
+    let mut stack = PrintStack::new(&mut out);
 
     walker.walk(path, args.depth, &mut stack, &mut visitor);
 
