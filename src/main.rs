@@ -22,9 +22,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let report = reporter.report(path).unwrap();
         for (i, (name, status)) in report.branch_status.iter().enumerate() {
             if i < report.branch_status.len() - 1 {
-                stack.extend(Node::Open).print();
+                stack.extend(Node::Open).print(std::io::stdout());
             } else {
-                stack.extend(Node::Terminal).print();
+                stack.extend(Node::Terminal).print(std::io::stdout());
             }
             println!("{} - {:?}", name, status);
         }

@@ -28,7 +28,7 @@ impl Walker for SimpleWalker {
         stack: PrintStack,
         visitor: &mut dyn FnMut(&Path, &PrintStack),
     ) {
-        stack.print();
+        stack.print(std::io::stdout());
         println!("{}", root.file_name().unwrap().to_str().unwrap());
 
         if depth == 0 {

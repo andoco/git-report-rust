@@ -1,3 +1,5 @@
+use std::io::Write;
+
 #[derive(Debug, PartialEq)]
 pub enum Node {
     Open,
@@ -32,7 +34,7 @@ impl PrintStack {
         PrintStack { nodes: new_status }
     }
 
-    pub fn print(&self) {
+    pub fn print(&self, mut out: impl Write) {
         self.nodes.iter().for_each(|status| {
             let s = match *status {
                 Node::Open => "├──",
@@ -40,13 +42,15 @@ impl PrintStack {
                 Node::Terminal => "└──",
                 Node::Empty => "   ",
             };
-            print!("{}", s);
+            write!(out, "{}", s).unwrap();
         })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::str::from_utf8;
+
     use super::*;
 
     #[test]
@@ -76,5 +80,29 @@ mod tests {
     fn test_stack_extend_maps_empty_to_empty() {
         let stack = PrintStack::new().extend(Node::Empty).extend(Node::Open);
         assert_eq!(stack.nodes, vec![Node::Empty, Node::Open]);
+    }
+
+    #[test]
+    fn test_stack_print() {
+        let mut out = Vec::new();
+
+        let stack1 = PrintStack::new();
+        stack1.print(&mut out);
+        assert_eq!(from_utf8(&out).unwrap(), "");
+
+        let stack2 = stack1.extend(Node::Open);
+        out.clear();
+        stack2.print(&mut out);
+        assert_eq!(from_utf8(&out).unwrap(), "├──");
+
+        let stack3 = stack2.extend(Node::Open);
+        out.clear();
+        stack3.print(&mut out);
+        assert_eq!(from_utf8(&out).unwrap(), "│  ├──");
+
+        let stack4 = stack3.extend(Node::Terminal);
+        out.clear();
+        stack4.print(&mut out);
+        assert_eq!(from_utf8(&out).unwrap(), "│  │  └──");
     }
 }
