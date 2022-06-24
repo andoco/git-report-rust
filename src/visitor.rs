@@ -1,7 +1,15 @@
 use std::{fs::read_dir, path::Path};
 
+use crate::print_stack::{Node, PrintStack};
+
 pub trait Walker {
-    fn walk(&self, root: &Path, depth: u8, state: State, visitor: &mut dyn FnMut(&Path, &State));
+    fn walk(
+        &self,
+        root: &Path,
+        depth: u8,
+        stack: PrintStack,
+        visitor: &mut dyn FnMut(&Path, &PrintStack),
+    );
 }
 
 pub struct SimpleWalker;
@@ -13,12 +21,18 @@ impl SimpleWalker {
 }
 
 impl Walker for SimpleWalker {
-    fn walk(&self, root: &Path, depth: u8, state: State, visitor: &mut dyn FnMut(&Path, &State)) {
-        state.print();
+    fn walk(
+        &self,
+        root: &Path,
+        depth: u8,
+        stack: PrintStack,
+        visitor: &mut dyn FnMut(&Path, &PrintStack),
+    ) {
+        stack.print();
         println!("{}", root.file_name().unwrap().to_str().unwrap());
 
         if depth == 0 {
-            visitor(&root, &state);
+            visitor(&root, &stack);
             return;
         }
 
@@ -28,60 +42,13 @@ impl Walker for SimpleWalker {
             if let Ok(entry) = entry {
                 let path = entry.path();
 
-                let new_state = match i {
-                    i if i == dir_entries.len() - 1 => state.extend(Status::Terminal),
-                    _ => state.extend(Status::Open),
+                let new_stack = match i {
+                    i if i == dir_entries.len() - 1 => stack.extend(Node::Terminal),
+                    _ => stack.extend(Node::Open),
                 };
-                self.walk(&path, depth - 1, new_state, visitor);
+                self.walk(&path, depth - 1, new_stack, visitor);
             }
         }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Status {
-    Open,
-    Continue,
-    Terminal,
-    Empty,
-}
-
-pub struct State {
-    status: Vec<Status>,
-}
-
-impl State {
-    pub fn new() -> State {
-        State { status: Vec::new() }
-    }
-
-    pub fn extend(&self, status: Status) -> State {
-        let mut new_status: Vec<Status> = self
-            .status
-            .iter()
-            .map(|status| match status {
-                Status::Open => Status::Continue,
-                Status::Continue => Status::Continue,
-                Status::Terminal => Status::Empty,
-                Status::Empty => Status::Empty,
-            })
-            .collect();
-
-        new_status.push(status);
-
-        State { status: new_status }
-    }
-
-    pub fn print(&self) {
-        self.status.iter().for_each(|status| {
-            let s = match *status {
-                Status::Open => "├──",
-                Status::Continue => "│  ",
-                Status::Terminal => "└──",
-                Status::Empty => "   ",
-            };
-            print!("{}", s);
-        })
     }
 }
 
@@ -111,13 +78,13 @@ mod tests {
         create_dir_all(&repo1_2).unwrap();
 
         let walker = SimpleWalker::new();
-        let state = State::new();
+        let stack = PrintStack::new();
 
-        let mut visitor = |path: &Path, _state: &State| {
+        let mut visitor = |path: &Path, _stack: &PrintStack| {
             visited.push(path.to_path_buf());
         };
 
-        walker.walk(&root, 4, state, &mut visitor);
+        walker.walk(&root, 4, stack, &mut visitor);
 
         assert_eq!(visited, vec![repo1, repo1_2]);
     }

@@ -1,14 +1,16 @@
 mod cli;
+mod print_stack;
 mod reporter;
 mod visitor;
 
 use cli::get_args;
+use print_stack::PrintStack;
 use reporter::{Git2Reporter, Reporter};
 
 use std::{env::current_dir, error::Error, path::Path};
-use visitor::{SimpleWalker, State, Walker};
+use visitor::{SimpleWalker, Walker};
 
-use crate::visitor::Status;
+use crate::print_stack::Node;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
@@ -16,19 +18,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reporter = Git2Reporter {};
     let walker = SimpleWalker::new();
 
-    let mut visitor = |path: &Path, state: &State| {
+    let mut visitor = |path: &Path, stack: &PrintStack| {
         let report = reporter.report(path).unwrap();
         for (i, (name, status)) in report.branch_status.iter().enumerate() {
             if i < report.branch_status.len() - 1 {
-                state.extend(Status::Open).print();
+                stack.extend(Node::Open).print();
             } else {
-                state.extend(Status::Terminal).print();
+                stack.extend(Node::Terminal).print();
             }
             println!("{} - {:?}", name, status);
         }
     };
 
-    walker.walk(path, args.depth, State::new(), &mut visitor);
+    walker.walk(path, args.depth, PrintStack::new(), &mut visitor);
 
     Ok(())
 }
