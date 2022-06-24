@@ -115,24 +115,12 @@ mod tests {
     #[test]
     fn test_stack_print() {
         let mut out = Vec::new();
+        PrintStack::new(&mut out)
+            .extend(Node::Open("a".to_string()))
+            .extend(Node::Open("b".to_string()))
+            .extend(Node::Terminal("c".to_string()))
+            .print();
 
-        let mut stack0 = PrintStack::new(&mut out);
-        stack0.print();
-        assert_eq!(from_utf8(&out).unwrap(), "\n");
-
-        // let stack2 = stack1.extend(Node::Open("a".to_string()));
-        // out.clear();
-        // stack2.print();
-        // assert_eq!(from_utf8(&out).unwrap(), "├── a\n");
-
-        // let stack3 = stack2.extend(Node::Open("b".to_string()));
-        // out.clear();
-        // stack3.print();
-        // assert_eq!(from_utf8(&out).unwrap(), "│  ├── b\n");
-
-        // let stack4 = stack3.extend(Node::Terminal("c".to_string()));
-        // out.clear();
-        // stack4.print();
-        // assert_eq!(from_utf8(&out).unwrap(), "│  │  └── c\n");
+        assert_eq!(from_utf8(&out).unwrap(), "│  │  └── c\n");
     }
 }
