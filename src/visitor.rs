@@ -7,8 +7,8 @@ pub trait Walker {
         &self,
         root: &Path,
         depth: u8,
-        stack: PrintStack,
-        visitor: &mut dyn FnMut(&Path, &PrintStack),
+        stack: &mut PrintStack,
+        visitor: &mut dyn FnMut(&Path, &mut PrintStack),
     );
 }
 
@@ -25,13 +25,13 @@ impl Walker for SimpleWalker {
         &self,
         root: &Path,
         depth: u8,
-        stack: PrintStack,
-        visitor: &mut dyn FnMut(&Path, &PrintStack),
+        stack: &mut PrintStack,
+        visitor: &mut dyn FnMut(&Path, &mut PrintStack),
     ) {
-        stack.print(std::io::stdout());
+        stack.print();
 
         if depth == 0 {
-            visitor(&root, &stack);
+            visitor(&root, stack);
             return;
         }
 
@@ -42,11 +42,11 @@ impl Walker for SimpleWalker {
                 let path = entry.path();
                 let name = format!("{}", path.file_name().unwrap().to_str().unwrap());
 
-                let new_stack = match i {
+                let mut new_stack = match i {
                     i if i == dir_entries.len() - 1 => stack.extend(Node::Terminal(name)),
                     _ => stack.extend(Node::Open(name)),
                 };
-                self.walk(&path, depth - 1, new_stack, visitor);
+                self.walk(&path, depth - 1, &mut new_stack, visitor);
             }
         }
     }
@@ -78,13 +78,14 @@ mod tests {
         create_dir_all(&repo1_2).unwrap();
 
         let walker = SimpleWalker::new();
-        let stack = PrintStack::new();
+        let mut out = std::io::sink();
+        let mut stack = PrintStack::new(&mut out);
 
-        let mut visitor = |path: &Path, _stack: &PrintStack| {
+        let mut visitor = |path: &Path, _stack: &mut PrintStack| {
             visited.push(path.to_path_buf());
         };
 
-        walker.walk(&root, 4, stack, &mut visitor);
+        walker.walk(&root, 4, &mut stack, &mut visitor);
 
         assert_eq!(visited, vec![repo1, repo1_2]);
     }
