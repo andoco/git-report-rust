@@ -45,9 +45,9 @@ impl<'a> PrintStack<'a> {
         for node in self.nodes.iter() {
             let s = match node {
                 Node::Open(str) => format!("├── {}", str),
-                Node::Continue => "│  ".to_string(),
+                Node::Continue => "│   ".to_string(),
                 Node::Terminal(str) => format!("└── {}", str),
-                Node::Empty => "   ".to_string(),
+                Node::Empty => "    ".to_string(),
             };
             write!(self.out, "{}", s).unwrap();
         }
@@ -121,6 +121,6 @@ mod tests {
             .extend(Node::Terminal("c".to_string()))
             .print();
 
-        assert_eq!(from_utf8(&out).unwrap(), "│  │  └── c\n");
+        assert_eq!(from_utf8(&out).unwrap(), "│   │   └── c\n");
     }
 }
