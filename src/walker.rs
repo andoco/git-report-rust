@@ -4,7 +4,7 @@ use colored::{ColoredString, Colorize};
 
 use crate::{
     print_stack::{Node, PrintStack},
-    reporter::{RepoReport, RepoStatus, Reporter},
+    repo::{RepoReport, RepoStatus, Reporter},
 };
 
 pub trait Walker {
@@ -87,7 +87,7 @@ fn get_name(report: &RepoReport) -> String {
 mod tests {
     use std::{collections::HashMap, fs::create_dir_all, path::PathBuf, str::from_utf8};
 
-    use crate::reporter::{BranchStatus, Git2Reporter};
+    use crate::repo::{BranchStatus, Git2Reporter};
 
     use super::*;
 

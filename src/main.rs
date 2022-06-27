@@ -1,13 +1,13 @@
 mod cli;
 mod print_stack;
-mod reporter;
-mod visitor;
+mod repo;
+mod walker;
 
 use cli::get_args;
-use reporter::Git2Reporter;
+use repo::Git2Reporter;
 
 use std::{env::current_dir, error::Error};
-use visitor::{SimpleWalker, Walker};
+use walker::{SimpleWalker, Walker};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
