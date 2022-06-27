@@ -15,7 +15,7 @@ pub struct PrintStack<'a> {
 
 impl<'a> PrintStack<'a> {
     pub fn new(out: &'a mut dyn Write) -> PrintStack {
-        PrintStack {
+        PrintStack::<'a> {
             out,
             nodes: Vec::new(),
         }

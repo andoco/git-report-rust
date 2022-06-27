@@ -46,6 +46,12 @@ pub trait Reporter {
 
 pub struct Git2Reporter {}
 
+impl Git2Reporter {
+    pub fn new() -> Git2Reporter {
+        Git2Reporter {}
+    }
+}
+
 impl Reporter for Git2Reporter {
     fn report(&self, path: &Path) -> Result<RepoReport, Box<dyn Error>> {
         match Repository::open(path) {
