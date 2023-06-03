@@ -10,6 +10,7 @@ edition = "2018"
 git2 = "0.16.1"
 colored = "2.0.0"
 clap = { version = "3.2.4", features = ["cargo"] }
+anyhow = "1.0.71"
 
 [dev-dependencies]
 tempfile = "3"

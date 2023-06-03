@@ -1,10 +1,10 @@
 use std::{
     collections::HashMap,
-    error::Error,
     path::{Path, PathBuf},
 };
 
-use git2::{BranchType, ErrorClass, ErrorCode, Repository, Status};
+use anyhow::{anyhow, Context};
+use git2::{Branch, BranchType, ErrorClass, ErrorCode, Repository, Status};
 
 #[derive(Debug, Clone)]
 pub struct RepoReport {
@@ -41,7 +41,7 @@ pub enum BranchStatus {
 }
 
 pub trait Reporter {
-    fn report(&self, path: &Path) -> Result<RepoReport, Box<dyn Error>>;
+    fn report(&self, path: &Path) -> anyhow::Result<RepoReport>;
 }
 
 pub struct Git2Reporter {}
@@ -53,11 +53,11 @@ impl Git2Reporter {
 }
 
 impl Reporter for Git2Reporter {
-    fn report(&self, path: &Path) -> Result<RepoReport, Box<dyn Error>> {
+    fn report(&self, path: &Path) -> anyhow::Result<RepoReport> {
         match Repository::open(path) {
             Ok(repo) => {
                 let mut status = get_repo_status(&repo);
-                let branches = get_branch_status(&repo)?;
+                let branches = get_branch_statuses(&repo)?;
 
                 if branches.iter().any(|(_, v)| *v != BranchStatus::Current) {
                     status = RepoStatus::Dirty
@@ -77,7 +77,7 @@ impl Reporter for Git2Reporter {
                 }),
                 _ => Ok(RepoReport {
                     path: path.to_path_buf(),
-                    repo_status: RepoStatus::Error(error.message().to_string()),
+                    repo_status: RepoStatus::Error(error.to_string()),
                     branch_status: HashMap::new(),
                 }),
             },
@@ -103,42 +103,58 @@ fn get_repo_status(repo: &Repository) -> RepoStatus {
     }
 }
 
-fn get_branch_status(repo: &Repository) -> Result<HashMap<String, BranchStatus>, Box<dyn Error>> {
-    let mut branch_changes = HashMap::<String, BranchStatus>::new();
-
+fn get_branch_statuses(repo: &Repository) -> anyhow::Result<HashMap<String, BranchStatus>> {
     match repo.branches(Some(BranchType::Local)) {
         Ok(branches) => {
-            for (b, _) in branches.map(|x| x.unwrap()) {
-                let branch_name = String::from(b.name()?.ok_or("could not get branch name")?);
+            let mut branch_changes = HashMap::<String, BranchStatus>::new();
 
-                if b.upstream().is_err() {
-                    branch_changes.insert(branch_name, BranchStatus::NoUpstream);
-                    continue;
-                }
+            for b in branches {
+                let (b, _) = b?;
 
-                let local_oid = repo.refname_to_id(b.get().name().ok_or("invalid ref name")?)?;
-                let upstream_oid =
-                    repo.refname_to_id(b.upstream()?.get().name().ok_or("invalid ref name")?)?;
-
-                let ahead_behind = repo.graph_ahead_behind(local_oid, upstream_oid);
-                let branch_status = match ahead_behind {
-                    Ok((ahead, _)) => {
-                        if ahead > 0 {
-                            BranchStatus::Ahead
-                        } else {
-                            BranchStatus::Current
-                        }
-                    }
-                    Err(e) => BranchStatus::Error(e.to_string()),
+                let branch_status = match get_branch_status(repo, &b) {
+                    Ok(branch_status) => branch_status,
+                    Err(err) => BranchStatus::Error(err.to_string()),
                 };
 
-                branch_changes.insert(branch_name, branch_status);
+                let branch_name = b
+                    .name()
+                    .context("could not get branch name")?
+                    .ok_or(anyhow!("could not get branch name as utf-8"))?;
+
+                branch_changes.insert(branch_name.to_string(), branch_status);
             }
+
+            Ok(branch_changes)
         }
-        Err(e) => panic!("{}", e),
+        Err(e) => Err(anyhow!("failed to get branch statuses: {}", e)),
+    }
+}
+
+fn get_branch_status(repo: &Repository, b: &Branch) -> anyhow::Result<BranchStatus> {
+    if b.upstream().is_err() {
+        return Ok(BranchStatus::NoUpstream);
     }
 
-    Ok(branch_changes)
+    let local_oid = repo.refname_to_id(b.get().name().context("invalid ref name")?)?;
+    let upstream_oid = repo.refname_to_id(
+        b.upstream()?
+            .get()
+            .name()
+            .ok_or(anyhow!("invalid ref name"))?,
+    )?;
+
+    let ahead_behind = repo.graph_ahead_behind(local_oid, upstream_oid);
+
+    match ahead_behind {
+        Ok((ahead, _)) => {
+            if ahead > 0 {
+                Ok(BranchStatus::Ahead)
+            } else {
+                Ok(BranchStatus::Current)
+            }
+        }
+        Err(e) => Ok(BranchStatus::Error(e.to_string())),
+    }
 }
 
 fn map_git_status_to_report_status(status: &Status) -> RepoStatus {

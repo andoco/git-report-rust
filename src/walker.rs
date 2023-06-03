@@ -1,5 +1,6 @@
 use std::{fs::read_dir, io::Write, path::Path};
 
+use anyhow::anyhow;
 use colored::{ColoredString, Colorize};
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
 };
 
 pub trait Walker {
-    fn report(&self, root: &Path, depth: u8, out: &mut dyn Write);
+    fn report(&self, root: &Path, depth: u8, out: &mut dyn Write) -> anyhow::Result<()>;
 }
 
 pub struct SimpleWalker<'a> {
@@ -20,8 +21,9 @@ impl<'a> SimpleWalker<'a> {
         SimpleWalker { reporter }
     }
 
-    fn visit(&self, path: &Path, stack: &mut PrintStack) {
-        let report = self.reporter.report(path).unwrap();
+    fn visit(&self, path: &Path, stack: &mut PrintStack) -> anyhow::Result<()> {
+        let report = self.reporter.report(path)?;
+
         for (i, (name, status)) in report.branch_status.iter().enumerate() {
             let txt = format!("{} - {:?}", name, status);
             if i < report.branch_status.len() - 1 {
@@ -30,57 +32,68 @@ impl<'a> SimpleWalker<'a> {
                 stack.extend(Node::Terminal(txt)).print();
             }
         }
+
+        Ok(())
     }
 
-    fn walk(&self, root: &Path, depth: u8, stack: &mut PrintStack) {
+    fn walk(&self, root: &Path, depth: u8, stack: &mut PrintStack) -> anyhow::Result<()> {
         stack.print();
 
         if depth == 0 {
-            self.visit(&root, stack);
-            return;
+            self.visit(&root, stack)?;
+            return Ok(());
         }
 
-        let dir_entries: Vec<_> = read_dir(root).unwrap().collect();
+        let dir_entries: Vec<_> = read_dir(root)?.collect();
 
         for (i, entry) in dir_entries.iter().enumerate() {
             if let Ok(entry) = entry {
                 let path = entry.path();
                 let report = self.reporter.report(&path).unwrap();
-                let name = get_name(&report);
+                let name = get_name(&report)?;
 
                 let mut new_stack = match i {
                     i if i == dir_entries.len() - 1 => stack.extend(Node::Terminal(name)),
                     _ => stack.extend(Node::Open(name)),
                 };
-                self.walk(&path, depth - 1, &mut new_stack);
+                self.walk(&path, depth - 1, &mut new_stack)?;
             }
         }
+
+        Ok(())
     }
 }
 
 impl Walker for SimpleWalker<'_> {
-    fn report(&self, root: &Path, depth: u8, out: &mut dyn Write) {
-        write!(out, "{}", root.to_str().unwrap()).unwrap();
-        self.walk(root, depth, &mut PrintStack::new(out));
+    fn report(&self, root: &Path, depth: u8, out: &mut dyn Write) -> anyhow::Result<()> {
+        write!(
+            out,
+            "{}",
+            root.to_str()
+                .ok_or(anyhow!("could not get root as string"))?
+        )?;
+        self.walk(root, depth, &mut PrintStack::new(out))?;
+        Ok(())
     }
 }
 
-fn get_name(report: &RepoReport) -> String {
+fn get_name(report: &RepoReport) -> anyhow::Result<String> {
     let name = report
         .path
         .file_name()
-        .unwrap()
+        .ok_or(anyhow!("cannot get file name"))?
         .to_str()
-        .unwrap()
-        .to_string();
+        .ok_or(anyhow!("cannot get file name as a string"))?;
 
-    match &report.repo_status {
+    let colored_name = match &report.repo_status {
         RepoStatus::Clean => name.green(),
         RepoStatus::Dirty => name.red(),
-        RepoStatus::NoRepo => ColoredString::from(name.as_str()),
+        RepoStatus::NoRepo => ColoredString::from(name),
         RepoStatus::Error(err) => format!("{} (ERR: {})", name, err).red(),
     }
-    .to_string()
+    .to_string();
+
+    Ok(colored_name)
 }
 
 #[cfg(test)]
@@ -99,7 +112,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let name = get_name(&report);
+        let name = get_name(&report).unwrap();
 
         assert_eq!(name, "repo1".green().to_string());
     }
@@ -112,7 +125,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let name = get_name(&report);
+        let name = get_name(&report).unwrap();
 
         assert_eq!(name, "repo1".red().to_string());
     }
@@ -125,7 +138,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let name = get_name(&report);
+        let name = get_name(&report).unwrap();
 
         assert_eq!(name, "repo1".to_string());
     }
@@ -138,7 +151,7 @@ mod tests {
             branch_status: HashMap::from([("master".to_string(), BranchStatus::Current)]),
         };
 
-        let name = get_name(&report);
+        let name = get_name(&report).unwrap();
 
         assert_eq!(name, "repo1 (ERR: Some error)".red().to_string());
     }
@@ -166,7 +179,7 @@ mod tests {
 
         let mut out = Vec::<u8>::new();
 
-        walker.report(&root, 4, &mut out);
+        walker.report(&root, 4, &mut out).unwrap();
 
         let printed = from_utf8(&out).unwrap();
 
