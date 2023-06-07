@@ -27,9 +27,9 @@ impl<'a> SimpleWalker<'a> {
         for (i, (name, status)) in report.branch_status.iter().enumerate() {
             let txt = format!("{} - {:?}", name, status);
             if i < report.branch_status.len() - 1 {
-                stack.extend(Node::Open(txt)).print();
+                stack.extend(Node::Open(txt)).print()?;
             } else {
-                stack.extend(Node::Terminal(txt)).print();
+                stack.extend(Node::Terminal(txt)).print()?;
             }
         }
 
@@ -37,7 +37,7 @@ impl<'a> SimpleWalker<'a> {
     }
 
     fn walk(&self, root: &Path, depth: u8, stack: &mut PrintStack) -> anyhow::Result<()> {
-        stack.print();
+        stack.print()?;
 
         if depth == 0 {
             self.visit(&root, stack)?;

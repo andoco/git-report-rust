@@ -41,7 +41,7 @@ impl<'a> PrintStack<'a> {
         }
     }
 
-    pub fn print(&mut self) {
+    pub fn print(&mut self) -> anyhow::Result<()> {
         for node in self.nodes.iter() {
             let s = match node {
                 Node::Open(str) => format!("├── {}", str),
@@ -49,9 +49,11 @@ impl<'a> PrintStack<'a> {
                 Node::Terminal(str) => format!("└── {}", str),
                 Node::Empty => "    ".to_string(),
             };
-            write!(self.out, "{}", s).unwrap();
+            write!(self.out, "{}", s)?;
         }
-        writeln!(self.out).unwrap();
+        writeln!(self.out)?;
+
+        Ok(())
     }
 }
 
@@ -119,7 +121,8 @@ mod tests {
             .extend(Node::Open("a".to_string()))
             .extend(Node::Open("b".to_string()))
             .extend(Node::Terminal("c".to_string()))
-            .print();
+            .print()
+            .unwrap();
 
         assert_eq!(from_utf8(&out).unwrap(), "│   │   └── c\n");
     }

@@ -24,6 +24,6 @@ pub fn get_args() -> Args {
 
     Args {
         path: matches.get_one::<PathBuf>("NAME").cloned(),
-        depth: matches.get_one::<u8>("depth").unwrap().to_owned(),
+        depth: matches.get_one::<u8>("depth").unwrap_or(&0).to_owned(),
     }
 }
